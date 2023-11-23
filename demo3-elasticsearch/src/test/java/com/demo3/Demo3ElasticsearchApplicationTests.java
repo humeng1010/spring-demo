@@ -7,12 +7,9 @@ import com.demo3.entity.Hotel;
 import com.demo3.mapper.HotelEsMapper;
 import com.demo3.model.docs.HotelDoc;
 import com.demo3.service.HotelService;
-import com.demo3.utils.Res;
 import lombok.SneakyThrows;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -30,6 +27,11 @@ import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.ParsedAvg;
+import org.elasticsearch.search.aggregations.metrics.ParsedStats;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -38,17 +40,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 
 @SpringBootTest
@@ -69,14 +69,14 @@ class Demo3ElasticsearchApplicationTests {
 
     @Test
     @SneakyThrows
-    void testDeleteIndex(){
+    void testDeleteIndex() {
         DeleteIndexRequest request = new DeleteIndexRequest("hotel");
-        client.indices().delete(request,RequestOptions.DEFAULT);
+        client.indices().delete(request, RequestOptions.DEFAULT);
     }
 
     @Test
     @SneakyThrows
-    void testGetIndex(){
+    void testGetIndex() {
         GetIndexRequest request = new GetIndexRequest("hotel");
         boolean exists = client.indices().exists(request, RequestOptions.DEFAULT);
         Assertions.assertTrue(exists);
@@ -87,6 +87,7 @@ class Demo3ElasticsearchApplicationTests {
 
     /**
      * 把数据库中的数据批量导入到es中
+     *
      * @throws IOException
      */
     @Test
@@ -130,6 +131,7 @@ class Demo3ElasticsearchApplicationTests {
 
     /**
      * 删除文档
+     *
      * @throws IOException
      */
     @Test
@@ -138,7 +140,7 @@ class Demo3ElasticsearchApplicationTests {
         request.add(new DeleteRequest("hotel").id("1"));
         request.add(new DeleteRequest("hotel").id("36934"));
         request.add(new DeleteRequest("hotel").id("38609"));
-        client.bulk(request,RequestOptions.DEFAULT);
+        client.bulk(request, RequestOptions.DEFAULT);
     }
 
     @Test
@@ -149,19 +151,19 @@ class Demo3ElasticsearchApplicationTests {
         BulkRequest request = new BulkRequest();
         for (Hotel hotel : list) {
             // 增量修改
-            request.add(new UpdateRequest("hotel",hotel.getId().toString())
+            request.add(new UpdateRequest("hotel", hotel.getId().toString())
                     .doc(
                             "price", "952",
                             "starName", "四钻"
                     ));
         }
         //3.发送请求
-        client.bulk(request,RequestOptions.DEFAULT);
+        client.bulk(request, RequestOptions.DEFAULT);
     }
 
     @Test
     @SneakyThrows
-    void testMatchAll(){
+    void testMatchAll() {
         SearchRequest request = new SearchRequest("hotel");
         request.source()
                 .query(QueryBuilders.matchAllQuery())
@@ -178,9 +180,9 @@ class Demo3ElasticsearchApplicationTests {
 
     @Test
     @SneakyThrows
-    void testMatch(){
+    void testMatch() {
         SearchRequest request = new SearchRequest("hotel");
-        request.source().query(QueryBuilders.matchQuery("name","外滩如家").analyzer("ik_max_word"));
+        request.source().query(QueryBuilders.matchQuery("name", "外滩如家").analyzer("ik_max_word"));
         SearchResponse response = client.search(request, RequestOptions.DEFAULT);
         long total = response.getHits().getTotalHits().value;
         System.out.println(total);
@@ -193,11 +195,11 @@ class Demo3ElasticsearchApplicationTests {
 
     @Test
     @SneakyThrows
-    void testBoolQuery(){
+    void testBoolQuery() {
         SearchRequest request = new SearchRequest("hotel");
         request.source().query(
                 QueryBuilders.boolQuery()
-                        .must(QueryBuilders.termQuery("city","上海"))
+                        .must(QueryBuilders.termQuery("city", "上海"))
                         .must(QueryBuilders.rangeQuery("price").lte(150))
         );
         SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -212,9 +214,9 @@ class Demo3ElasticsearchApplicationTests {
 
     @Test
     @SneakyThrows
-    void testGEO(){
+    void testGEO() {
         SearchRequest request = new SearchRequest("hotel");
-        request.source().sort(SortBuilders.geoDistanceSort("location",new GeoPoint(31.21,121.5))
+        request.source().sort(SortBuilders.geoDistanceSort("location", new GeoPoint(31.21, 121.5))
                 .order(SortOrder.ASC)
                 .unit(DistanceUnit.KILOMETERS));
         SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -229,6 +231,7 @@ class Demo3ElasticsearchApplicationTests {
             System.out.println(hotelDoc);
         }
     }
+
     @Test
     void testHighlight() throws IOException {
         // 1.准备Request
@@ -260,11 +263,11 @@ class Demo3ElasticsearchApplicationTests {
     private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
     @Test
-    void testElasticSearchTemplate(){
+    void testElasticSearchTemplate() {
         NativeSearchQueryBuilder queryBuilder = new NativeSearchQueryBuilder();
-        queryBuilder.withQuery(QueryBuilders.matchQuery("all","陆家嘴"))
-                .withPageable(PageRequest.of(0,10))
-                .withSort(SortBuilders.geoDistanceSort(HotelDocField.LOCATION,new GeoPoint(31.21,121.5))
+        queryBuilder.withQuery(QueryBuilders.matchQuery("all", "陆家嘴"))
+                .withPageable(PageRequest.of(0, 10))
+                .withSort(SortBuilders.geoDistanceSort(HotelDocField.LOCATION, new GeoPoint(31.21, 121.5))
                         .unit(DistanceUnit.KILOMETERS)
                         .order(SortOrder.ASC));
 
@@ -274,7 +277,7 @@ class Demo3ElasticsearchApplicationTests {
             HotelDoc content = searchHit.getContent();
             List<Object> sortValues = searchHit.getSortValues();
             for (Object sortValue : sortValues) {
-                System.out.println(sortValue+"km");
+                System.out.println(sortValue + "km");
             }
             System.out.println(content);
         }
@@ -285,7 +288,7 @@ class Demo3ElasticsearchApplicationTests {
     private HotelEsMapper hotelEsMapper;
 
     @Test
-    void testEsMapper(){
+    void testEsMapper() {
         Iterable<HotelDoc> all = hotelEsMapper.findAll();
         for (HotelDoc hotelDoc : all) {
             System.out.println(hotelDoc);
@@ -293,6 +296,79 @@ class Demo3ElasticsearchApplicationTests {
 
     }
 
+    /**
+     * 聚合函数的练习
+     *
+     * @throws NoSuchFieldException
+     */
+    @Test
+    void testAgg() throws NoSuchFieldException {
+        // 统计不同城市的酒店评分情况-适合用户
+        // 用户在某个城市
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+        // if city != null
+//        nativeSearchQueryBuilder.withFilter(QueryBuilders.termQuery(HotelDocField.CITY,"上海"));
+        // end
+        // 否则查询所有城市
+        nativeSearchQueryBuilder.addAggregation(AggregationBuilders.terms("cityAgg").field(HotelDocField.CITY)
+                        .size(20)
+                        .order(BucketOrder.count(false))
+                        .subAggregation(AggregationBuilders.terms("brandAgg").field(HotelDocField.BRAND)
+                                .size(100)
+                                .subAggregation(AggregationBuilders.stats("scoreStats").field(HotelDocField.SCORE))
+                                .order(BucketOrder.aggregation("scoreStats.avg", false))))
+                .withPageable(PageRequest.of(0, 1));
+        SearchHits<HotelDoc> search = elasticsearchRestTemplate.search(nativeSearchQueryBuilder.build(), HotelDoc.class);
+        Terms cityAgg = Objects.requireNonNull(search.getAggregations()).get("cityAgg");
+        List<? extends Terms.Bucket> buckets = cityAgg.getBuckets();
+        for (Terms.Bucket bucket : buckets) {
+            String city = bucket.getKeyAsString();
+            long docCount = bucket.getDocCount();
+            System.out.println("城市：" + city + " 酒店数量：" + docCount);
+            Terms aggregation = bucket.getAggregations().get("brandAgg");
+            List<? extends Terms.Bucket> buckets1 = aggregation.getBuckets();
+            for (Terms.Bucket bucket1 : buckets1) {
+                String keyAsString = bucket1.getKeyAsString();
+                long docCount1 = bucket1.getDocCount();
+                ParsedStats aggregation2 = bucket1.getAggregations().get("scoreStats");
+                double avg = aggregation2.getAvg();
+                System.out.println("品牌：" + keyAsString + " 数量：" + docCount1 + " 平均分：" + avg);
+            }
+        }
+    }
+
+    @Test
+    void testAgg2() {
+        // 统计不同酒店品牌在不同城市的评分情况-适合酒店管理人
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+        nativeSearchQueryBuilder
+                .addAggregation(AggregationBuilders.terms("brandAgg").field(HotelDocField.BRAND).size(10)
+                        .subAggregation(AggregationBuilders.terms("cityAgg").field(HotelDocField.CITY).size(10)
+                                .subAggregation(AggregationBuilders.avg("scoreAvg").field(HotelDocField.SCORE))
+                                .order(BucketOrder.aggregation("scoreAvg", false))))
+//                .withQuery(QueryBuilders.functionScoreQuery(QueryBuilders.matchQuery(HotelDocField.BRAND,"如家"),
+//                                ScoreFunctionBuilders.weightFactorFunction(10))
+//                        .boostMode(CombineFunction.SUM))// 给如家加10分权重，他给钱了，打广告了
+                .withPageable(PageRequest.of(0, 1));
+        SearchHits<HotelDoc> search = elasticsearchRestTemplate.search(nativeSearchQueryBuilder.build(), HotelDoc.class);
+        Terms aggregation = search.getAggregations().get("brandAgg");
+        List<? extends Terms.Bucket> buckets = aggregation.getBuckets();
+        for (Terms.Bucket bucket : buckets) {
+            String keyAsString = bucket.getKeyAsString();
+            long docCount = bucket.getDocCount();
+            System.out.println("品牌：" + keyAsString + " 数量：" + docCount);
+            Terms aggregation1 = bucket.getAggregations().get("cityAgg");
+            List<? extends Terms.Bucket> buckets1 = aggregation1.getBuckets();
+            for (Terms.Bucket bucket1 : buckets1) {
+                String city = bucket1.getKeyAsString();
+                long count = bucket1.getDocCount();
+                ParsedAvg avg = bucket1.getAggregations().get("scoreAvg");
+                double value = avg.getValue();
+                System.out.println("城市：" + city + " 数量：" + count + " 平均分：" + value);
+            }
+
+        }
+    }
 
 
 }

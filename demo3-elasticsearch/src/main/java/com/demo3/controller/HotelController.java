@@ -42,4 +42,19 @@ public class HotelController {
 
         return Res.createSuccess(hotelVOPage);
     }
+
+    @PostMapping("/add")
+    public Res<Void> addHotel(){
+        return null;
+    }
+
+    @PostMapping("/delete")
+    public Res<Void> deleteHotel(){
+        return null;
+    }
+
+    @PostMapping("/update")
+    public Res<Void> updateHotel(){
+        return null;
+    }
 }
