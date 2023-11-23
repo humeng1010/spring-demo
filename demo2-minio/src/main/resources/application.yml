@@ -1,0 +1,16 @@
+server:
+  port: 8090
+
+oss:
+  enabled: true
+  type: MINIO
+  endpoint: http://centos:9000
+  access-key: admin
+  secret-key: admin123456
+  default-bucket-name: pearl-bucket
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 50GB
+      max-request-size: 1024MB
