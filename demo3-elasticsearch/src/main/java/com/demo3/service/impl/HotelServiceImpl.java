@@ -3,23 +3,22 @@ package com.demo3.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.demo3.constants.HotelDocField;
 import com.demo3.entity.Hotel;
+import com.demo3.mapper.HotelMapper;
 import com.demo3.model.docs.HotelDoc;
 import com.demo3.model.dto.HotelDto;
 import com.demo3.model.req.QueryHotelByPageReq;
 import com.demo3.service.HotelService;
-import com.demo3.mapper.HotelMapper;
 import com.demo3.utils.OrderParamsUtil;
 import com.demo3.utils.PageParamsUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -47,6 +46,7 @@ public class HotelServiceImpl extends ServiceImpl<HotelMapper, Hotel>
         BoolQueryBuilder boolQueryBuilder = searchQueryBuild(queryHotelByPageReq);
         nativeSearchQueryBuilder
                 .withQuery(boolQueryBuilder)
+                .withSort(SortBuilders.fieldSort(queryHotelByPageReq.getOrderField()).order(SortOrder.valueOf(queryHotelByPageReq.getOrderType())))
                 .withPageable(PageRequest.of(queryHotelByPageReq.getPageNo(),queryHotelByPageReq.getPageSize()));
         SearchHits<HotelDoc> searchHits = elasticsearchRestTemplate.search(nativeSearchQueryBuilder.build(), HotelDoc.class);
         List<SearchHit<HotelDoc>> hits = searchHits.getSearchHits();
