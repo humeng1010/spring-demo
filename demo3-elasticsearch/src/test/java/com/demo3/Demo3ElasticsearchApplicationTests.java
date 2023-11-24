@@ -88,7 +88,6 @@ class Demo3ElasticsearchApplicationTests {
     /**
      * 把数据库中的数据批量导入到es中
      *
-     * @throws IOException
      */
     @Test
     void testBulkRequest() throws IOException {
@@ -113,7 +112,6 @@ class Demo3ElasticsearchApplicationTests {
     /**
      * 查询文档
      *
-     * @throws IOException
      */
     @Test
     void testGetDocumentById() throws IOException {
@@ -132,7 +130,6 @@ class Demo3ElasticsearchApplicationTests {
     /**
      * 删除文档
      *
-     * @throws IOException
      */
     @Test
     void testDelDocumentByIds() throws IOException {
@@ -298,11 +295,9 @@ class Demo3ElasticsearchApplicationTests {
 
     /**
      * 聚合函数的练习
-     *
-     * @throws NoSuchFieldException
      */
     @Test
-    void testAgg() throws NoSuchFieldException {
+    void testAgg() {
         // 统计不同城市的酒店评分情况-适合用户
         // 用户在某个城市
         NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
@@ -351,7 +346,7 @@ class Demo3ElasticsearchApplicationTests {
 //                        .boostMode(CombineFunction.SUM))// 给如家加10分权重，他给钱了，打广告了
                 .withPageable(PageRequest.of(0, 1));
         SearchHits<HotelDoc> search = elasticsearchRestTemplate.search(nativeSearchQueryBuilder.build(), HotelDoc.class);
-        Terms aggregation = search.getAggregations().get("brandAgg");
+        Terms aggregation = Objects.requireNonNull(search.getAggregations()).get("brandAgg");
         List<? extends Terms.Bucket> buckets = aggregation.getBuckets();
         for (Terms.Bucket bucket : buckets) {
             String keyAsString = bucket.getKeyAsString();
