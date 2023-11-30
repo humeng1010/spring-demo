@@ -5,14 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * <p>
- * 全局异常拦截
- * </p>
- *
- * @author yangkai.shen
- * @date Created in 2019-09-30 10:30
- */
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {

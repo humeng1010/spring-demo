@@ -2,6 +2,7 @@ package com.demo4.aspect;
 
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.json.JSONUtil;
+import com.demo5.util.IpUtil;
 import eu.bitwalker.useragentutils.UserAgent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,7 +62,7 @@ public class LogAspect {
         final Log l = Log.builder()
                 .threadId(Long.toString(Thread.currentThread().getId()))
                 .threadName(Thread.currentThread().getName())
-                .ip(getIp(request))
+                .ip(IpUtil.getIpAddr())
                 .url(request.getRequestURL().toString())
                 .classMethod(String.format("%s.%s", point.getSignature().getDeclaringTypeName(),
                         point.getSignature().getName()))

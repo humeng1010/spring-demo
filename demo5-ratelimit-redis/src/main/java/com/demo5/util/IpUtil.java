@@ -11,9 +11,6 @@ import javax.servlet.http.HttpServletRequest;
  * <p>
  * IP 工具类
  * </p>
- *
- * @author yangkai.shen
- * @date Created in 2019-09-30 10:38
  */
 @Slf4j
 public class IpUtil {

@@ -17,11 +17,14 @@
 package com.demo4.controller;
 
 import com.demo4.entity.User;
+import com.demo5.anno.RateLimiter;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:chenxilzx1@gmail.com">theonefx</a>
@@ -29,9 +32,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 public class BasicController {
 
-    // http://127.0.0.1:8080/hello?name=lisi
+    // http://127.0.0.1:8081/hello?name=lisi
     @RequestMapping("/hello")
     @ResponseBody
+    @RateLimiter(value = 5,key = "hello:limit")
     public String hello(@RequestParam(name = "name", defaultValue = "unknown user") String name) {
         return "Hello " + name;
     }

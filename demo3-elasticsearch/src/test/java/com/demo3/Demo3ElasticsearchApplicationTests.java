@@ -45,10 +45,15 @@ import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
 import javax.annotation.Resource;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @SpringBootTest
@@ -363,6 +368,46 @@ class Demo3ElasticsearchApplicationTests {
             }
 
         }
+    }
+
+    private static final String REVIT_SOURCE_VERSION_PATTERN = "((?<=Revit Build: Autodesk Revit )20\\d{2})|((?<=Format: )20\\d{2})";
+    /**
+     * 这段正则表达式是用于匹配特定格式中的年份信息的。它由两部分组成，每部分都是一个查找断言（lookahead assertion），用于匹配特定的文本模式。这里的文本模式是特定于年份的，特别是格式为“20XX”的年份，其中“XX”代表两位数字。
+     * (?<=Revit Build: Autodesk Revit )20\d{2}
+     * (?<=...)：这是一个正向后查找（positive lookbehind）断言。它告诉正则表达式引擎匹配一个模式，仅当该模式出现在特定文本之后时。
+     * Revit Build: Autodesk Revit ：这是后查找断言中要查找的特定文本。正则表达式引擎会寻找这个文本，但不会将其包含在最终的匹配结果中。
+     * 20\d{2}：这是实际要匹配的模式。20 是字面量字符，\d{2} 表示两位数字（\d 是数字的通用字符，{2} 指定重复两次）。所以，这部分会匹配像“2021”、“2022”这样的年份。
+     * 综合起来，这部分正则表达式会匹配任何紧跟在“Revit Build: Autodesk Revit ”文本之后的“20XX”格式的年份。
+     * (?<=Format: )20\d{2}
+     * 这部分与上面的类似，但是它是用于匹配紧跟在“Format: ”文本之后的“20XX”格式的年份。
+     * 综合来看，这个正则表达式用于在文本中查找两种特定模式中的年份：“Revit Build: Autodesk Revit 20XX”和“Format: 20XX”，其中“XX”代表任意两位数字。这种类型的正则表达式通常用于解析包含特定格式文本的文件或数据流，以提取重要信息，例如软件版本号或文件格式年份。
+     */
+    @Test
+    @SneakyThrows
+    public void contextLoads() {
+        FileInputStream fileInputStream = new FileInputStream("D:\\company_resource_group\\中交第二公路勘察设计研究院有限公司\\10号槽钢.rfa");
+        // 创建一个临时文件
+        String version = null;
+        outer:
+        for (int i = 0; i < 20; i++) {
+            ((InputStream) fileInputStream).skip(i);
+            byte[] buffer = new byte[2048];
+            while (((InputStream) fileInputStream).read(buffer) != -1) {
+                String head = new String(buffer, StandardCharsets.UTF_16);
+                Pattern pattern = Pattern.compile(REVIT_SOURCE_VERSION_PATTERN);
+                Matcher matcher = pattern.matcher(head);
+                boolean matches = matcher.find();
+//                boolean matches = Pattern.matches(REVIT_SOURCE_VERSION_PATTERN, head);
+                if (matches) {
+                    // 为了获取到匹配的内容
+                    version = matcher.group();
+                    break outer;
+                }
+            }
+            ((InputStream) fileInputStream).close();
+        }
+        System.out.println(version);
+
     }
 
 

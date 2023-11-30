@@ -10,10 +10,6 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * 限流注解，添加了 {@link AliasFor} 必须通过 {@link AnnotationUtils} 获取，才会生效
  * </p>
- *
- * @author yangkai.shen
- * @date Created in 2019-09-30 10:31
- * @see AnnotationUtils
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
